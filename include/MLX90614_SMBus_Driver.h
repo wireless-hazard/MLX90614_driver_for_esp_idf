@@ -17,11 +17,21 @@
 #ifndef _MLX90614_SMBus_Driver_H_
 #define _MLX90614_SMBus_Driver_H_
 
-#include <stdint.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-    void MLX90614_SMBusInit(uint8_t sda_gpio, uint8_t scl_gpio, int freq);
-    int MLX90614_SMBusRead(uint8_t slaveAddr,uint8_t readAddress, uint16_t *data);
-    int MLX90614_SMBusWrite(uint8_t slaveAddr,uint8_t writeAddress, uint16_t data);
+#include <stdint.h>
+#include "driver/i2c.h"
+	
+
+    void MLX90614_SMBusInit(i2c_port_t i2c_num, uint8_t sda_gpio, uint8_t scl_gpio, int freq);
+    int MLX90614_SMBusRead(i2c_port_t i2c_num, uint8_t slaveAddr,uint8_t readAddress, uint16_t *data);
+    int MLX90614_SMBusWrite(i2c_port_t i2c_num, uint8_t slaveAddr,uint8_t writeAddress, uint16_t data);
     int MLX90614_SendCommand(uint8_t slaveAddr,uint8_t command);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

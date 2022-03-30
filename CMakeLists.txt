@@ -1,6 +1,11 @@
-# The following lines of boilerplate have to be in your project's
-# CMakeLists in this exact order for cmake to work correctly
-cmake_minimum_required(VERSION 3.5)
+set(COMPONENT_SRCS
+    "src/MLX90614_API.c"
+    "src/MLX90614_SMBus_Driver.c")
 
-include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(mkcooling)
+set(COMPONENT_ADD_INCLUDEDIRS "include")
+
+set(COMPONENT_PRIV_REQUIRES main "I2Cbus")
+
+register_component(MLX90614_component)
+
+component_compile_options(PUBLIC -DMPU_COMPONENT_TRUE=1)

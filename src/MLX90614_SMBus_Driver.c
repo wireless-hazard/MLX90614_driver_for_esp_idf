@@ -1,6 +1,6 @@
 #include "driver/i2c.h"
 #include "esp_log.h"
-#include "include/MLX90614_SMBus_Driver.h"
+#include "MLX90614_SMBus_Driver.h"
 
 #define I2C_MASTER_TX_BUF_DISABLE 0 /*!< I2C master doesn't need buffer */
 #define I2C_MASTER_RX_BUF_DISABLE 0 /*!< I2C master doesn't need buffer */
@@ -17,7 +17,7 @@ static const char *TAG = "MLX90614_Module";
 uint8_t Calculate_PEC(uint8_t, uint8_t);
 void WaitEE(uint16_t ms);
 
-void MLX90614_SMBusInit(uint8_t sda_gpio, uint8_t scl_gpio, int freq){   
+void MLX90614_SMBusInit(i2c_port_t i2c_num, uint8_t sda_gpio, uint8_t scl_gpio, int freq){   
     sda = sda_gpio;
     scl = scl_gpio;
     i2c_config_t MLX90614_config = {
@@ -28,11 +28,11 @@ void MLX90614_SMBusInit(uint8_t sda_gpio, uint8_t scl_gpio, int freq){
         .scl_pullup_en = GPIO_PULLUP_ENABLE,  /*!< Internal GPIO pull mode for I2C scl signal*/
         .master.clk_speed = freq    /*!< I2C clock frequency for master mode, (no higher than 1MHz for now) */
     };
-    i2c_param_config(I2C_NUM_0, &MLX90614_config);
-    i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
+    i2c_param_config(i2c_num, &MLX90614_config);
+    i2c_driver_install(i2c_num, I2C_MODE_MASTER, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
 }
 
-int MLX90614_SMBusRead(uint8_t slaveAddr, uint8_t reg_addr, uint16_t *data){
+int MLX90614_SMBusRead(i2c_port_t i2c_num, uint8_t slaveAddr, uint8_t reg_addr, uint16_t *data){
     
     uint8_t chip_addr; 
     uint8_t data_addr;                          
@@ -55,7 +55,7 @@ int MLX90614_SMBusRead(uint8_t slaveAddr, uint8_t reg_addr, uint16_t *data){
     i2c_master_read(cmd, recived_data, 2, ACK_VAL);
     i2c_master_read_byte(cmd, recived_data + 2, NACK_VAL);       
     i2c_master_stop(cmd);  
-    esp_err_t ret = i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS);
+    esp_err_t ret = i2c_master_cmd_begin(i2c_num, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
     if (ret == ESP_OK) {
         pec = Calculate_PEC(0, pec);
@@ -77,11 +77,11 @@ int MLX90614_SMBusRead(uint8_t slaveAddr, uint8_t reg_addr, uint16_t *data){
     return 0;   
 }
 
-int MLX90614_SMBusWrite(uint8_t slaveAddr, uint8_t writeAddress, uint16_t data)
+int MLX90614_SMBusWrite(i2c_port_t i2c_num,uint8_t slaveAddr, uint8_t writeAddress, uint16_t data)
 {
     uint8_t chip_addr;
     uint8_t send_data[4] = {0,0,0,0};
-    static uint16_t dataCheck;
+    uint16_t dataCheck;
     uint8_t pec;
     
     chip_addr = (slaveAddr << 1);
@@ -96,24 +96,9 @@ int MLX90614_SMBusWrite(uint8_t slaveAddr, uint8_t writeAddress, uint16_t data)
     
     send_data[3] = pec;
 
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, chip_addr | WRITE_BIT, ACK_CHECK_EN);
-    for (int i = 0; i < 3; i++) {
-        i2c_master_write_byte(cmd, send_data[i], ACK_CHECK_EN);
-    }
-    i2c_master_stop(cmd);
-    esp_err_t ret = i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_RATE_MS);
-    i2c_cmd_link_delete(cmd);
-    if (ret == ESP_OK) {
-        ESP_LOGI(TAG, "Write OK");
-    } else if (ret == ESP_ERR_TIMEOUT) {
-        ESP_LOGW(TAG, "Bus is busy");
-    } else {
-        ESP_LOGW(TAG, "Write Failed");
-    }       
+    ESP_ERROR_CHECK(i2c_master_write_to_device(i2c_num, slaveAddr, send_data, sizeof(send_data), 2000 / portTICK_RATE_MS));
     
-    MLX90614_SMBusRead(slaveAddr, writeAddress, &dataCheck);
+    MLX90614_SMBusRead(i2c_num,slaveAddr, writeAddress, &dataCheck);
     
     if ( dataCheck != data)
     {
@@ -126,7 +111,6 @@ int MLX90614_SMBusWrite(uint8_t slaveAddr, uint8_t writeAddress, uint16_t data)
 int MLX90614_SendCommand(uint8_t slaveAddr, uint8_t command)
 {
     uint8_t chip_addr;
-    int ack = 0;
     uint8_t send_data[2]= {0,0};
     uint8_t pec;
     

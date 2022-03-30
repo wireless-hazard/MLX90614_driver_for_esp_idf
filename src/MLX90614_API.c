@@ -14,13 +14,13 @@
  * limitations under the License.
  *
  */
-#include "include/MLX90614_SMBus_Driver.h"
+#include "MLX90614_SMBus_Driver.h"
 #include "esp_system.h"
 #include <math.h>
 
 //------------------------------------------------------------------------------
   
-int MLX90614_DumpEE(uint8_t slaveAddr, uint16_t *eeData)
+int MLX90614_DumpEE(i2c_port_t i2c_num, uint8_t slaveAddr, uint16_t *eeData)
 {
      int error = 0;
      char address = 0x20;
@@ -28,7 +28,7 @@ int MLX90614_DumpEE(uint8_t slaveAddr, uint16_t *eeData)
      
      while (address < 0x40 && error == 0)
      {
-        error = MLX90614_SMBusRead(slaveAddr, address, p);
+        error = MLX90614_SMBusRead(i2c_num,slaveAddr, address, p);
         address = address + 1;
         p = p + 1;
      }   
@@ -38,12 +38,12 @@ int MLX90614_DumpEE(uint8_t slaveAddr, uint16_t *eeData)
 
 //------------------------------------------------------------------------------
 
-int MLX90614_GetTa(uint8_t slaveAddr, float *ta)
+int MLX90614_GetTa(i2c_port_t i2c_num, uint8_t slaveAddr, float *ta)
 {
     int error = 0;
     uint16_t data = 0;
     
-    error = MLX90614_SMBusRead(slaveAddr, 0x06, &data);
+    error = MLX90614_SMBusRead(i2c_num ,slaveAddr, 0x06, &data);
     
     if (data > 0x7FFF)
     {
@@ -57,12 +57,12 @@ int MLX90614_GetTa(uint8_t slaveAddr, float *ta)
 
 //------------------------------------------------------------------------------
 
-int MLX90614_GetTo(uint8_t slaveAddr, float *to)
+int MLX90614_GetTo(i2c_port_t i2c_num,uint8_t slaveAddr, float *to)
 {
     int error = 0;
     uint16_t data = 0;
     
-    error = MLX90614_SMBusRead(slaveAddr, 0x07, &data);
+    error = MLX90614_SMBusRead(i2c_num, slaveAddr, 0x07, &data);
     
     if (data > 0x7FFF)
     {
@@ -79,12 +79,12 @@ int MLX90614_GetTo(uint8_t slaveAddr, float *to)
 
 //------------------------------------------------------------------------------
 
-int MLX90614_GetTo2(uint8_t slaveAddr, float *to2)
+int MLX90614_GetTo2(i2c_port_t i2c_num,uint8_t slaveAddr, float *to2)
 {
     int error = 0;
     uint16_t data = 0;
     
-    error = MLX90614_SMBusRead(slaveAddr, 0x08, &data);
+    error = MLX90614_SMBusRead(i2c_num, slaveAddr, 0x08, &data);
     
     if (data > 0x7FFF)
     {
@@ -101,12 +101,12 @@ int MLX90614_GetTo2(uint8_t slaveAddr, float *to2)
 
 //------------------------------------------------------------------------------
 
-int MLX90614_GetIRdata1(uint8_t slaveAddr, uint16_t *ir1)
+int MLX90614_GetIRdata1(i2c_port_t i2c_num, uint8_t slaveAddr, uint16_t *ir1)
 {
     int error = 0;
     uint16_t data = 0;
     
-    error = MLX90614_SMBusRead(slaveAddr, 0x04, &data);
+    error = MLX90614_SMBusRead(i2c_num, slaveAddr, 0x04, &data);
     
     if (error == 0)
     {
@@ -118,12 +118,12 @@ int MLX90614_GetIRdata1(uint8_t slaveAddr, uint16_t *ir1)
 
 //------------------------------------------------------------------------------
 
-int MLX90614_GetIRdata2(uint8_t slaveAddr, uint16_t *ir2)
+int MLX90614_GetIRdata2(i2c_port_t i2c_num, uint8_t slaveAddr, uint16_t *ir2)
 {
     int error = 0;
     uint16_t data = 0;
     
-    error = MLX90614_SMBusRead(slaveAddr, 0x05, &data);
+    error = MLX90614_SMBusRead(i2c_num, slaveAddr, 0x05, &data);
     
     if (error == 0)
     {
@@ -135,19 +135,41 @@ int MLX90614_GetIRdata2(uint8_t slaveAddr, uint16_t *ir2)
 
 //------------------------------------------------------------------------------
 
-int MLX90614_GetEmissivity(uint8_t slaveAddr, float *emissivity)
+int MLX90614_GetEmissivity(i2c_port_t i2c_num, uint8_t slaveAddr, float *emissivity)
 {
     int error = 0;
     uint16_t data = 0;
-    error = MLX90614_SMBusRead(slaveAddr, 0x24, &data);
+    error = MLX90614_SMBusRead(i2c_num, slaveAddr, 0x24, &data);
     
     *emissivity = (float)data / 0xFFFF;
+    return error;
+}
+//-------------------------------------------------------------------------------
+int MLX90614_GetSlaveAddr(i2c_port_t i2c_num, uint16_t slaveAddr, uint16_t *current_addr)
+{
+    int error = 0;
+
+    error = MLX90614_SMBusRead(i2c_num, slaveAddr, 0x2E, current_addr);
+
+    return error;
+}
+
+//--------------------------------------------------------------------------------
+int MLX90614_SetSlaveAddr(i2c_port_t i2c_num, uint16_t slaveAddr, uint16_t current_addr)
+{
+    int error = 0;
+    do{
+        // error = MLX90614_SMBusWrite(i2c_num, slaveAddr, 0x2E, 0x0000);
+        printf("error\n");
+        error = MLX90614_SMBusWrite(i2c_num, slaveAddr, 0x2E, current_addr);
+    }while(error != 0);
+
     return error;
 }
 
 //------------------------------------------------------------------------------
 
-int MLX90614_SetEmissivity(uint8_t slaveAddr, float value)
+int MLX90614_SetEmissivity(i2c_port_t i2c_num, uint8_t slaveAddr, float value)
 {
     int error = 0;
     uint16_t data;
@@ -163,11 +185,11 @@ int MLX90614_SetEmissivity(uint8_t slaveAddr, float value)
     temp = value * 65535 + 0.5;
     newE = temp;
     
-    error = MLX90614_SMBusRead(slaveAddr, 0x24, &curE);
+    error = MLX90614_SMBusRead(i2c_num, slaveAddr, 0x24, &curE);
     
     if(error == 0)
     {
-        error = MLX90614_SMBusRead(slaveAddr, 0x2F, &data);
+        error = MLX90614_SMBusRead(i2c_num, slaveAddr, 0x2F, &data);
         
         if(error == 0)
         {
@@ -184,18 +206,18 @@ int MLX90614_SetEmissivity(uint8_t slaveAddr, float value)
             
             if(error == 0)
             {                
-                error = MLX90614_SMBusWrite(slaveAddr, 0x24, 0x0000);
+                error = MLX90614_SMBusWrite(i2c_num, slaveAddr, 0x24, 0x0000);
                 
                 if(error == 0)
                 {
-                    error = MLX90614_SMBusWrite(slaveAddr, 0x24, newE);
+                    error = MLX90614_SMBusWrite(i2c_num, slaveAddr, 0x24, newE);
                     
                     if(error == 0)
                     {
-                        error = MLX90614_SMBusWrite(slaveAddr, 0x2F, 0x0000);
+                        error = MLX90614_SMBusWrite(i2c_num, slaveAddr, 0x2F, 0x0000);
                         if(error == 0)
                         {
-                            error = MLX90614_SMBusWrite(slaveAddr, 0x2F, data);
+                            error = MLX90614_SMBusWrite(i2c_num, slaveAddr, 0x2F, data);
                             
                             if(error == 0)
                             {
@@ -213,11 +235,11 @@ int MLX90614_SetEmissivity(uint8_t slaveAddr, float value)
     
 //------------------------------------------------------------------------------
 
-int MLX90614_GetFIR(uint8_t slaveAddr, uint8_t *fir)
+int MLX90614_GetFIR(i2c_port_t i2c_num, uint8_t slaveAddr, uint8_t *fir)
 {
     int error = 0;
     uint16_t data = 0;
-    error = MLX90614_SMBusRead(slaveAddr, 0x25, &data);
+    error = MLX90614_SMBusRead(i2c_num, slaveAddr, 0x25, &data);
     
     data = data >> 8;
     data = data & 0x0007;
@@ -229,23 +251,23 @@ int MLX90614_GetFIR(uint8_t slaveAddr, uint8_t *fir)
 
 //------------------------------------------------------------------------------
 
-int MLX90614_SetFIR(uint8_t slaveAddr, uint8_t value)
+int MLX90614_SetFIR(i2c_port_t i2c_num, uint8_t slaveAddr, uint8_t value)
 {
     int error = 0;
     uint16_t data = 0;
     uint16_t val = value & 0x0007;
     
-    error = MLX90614_SMBusRead(slaveAddr, 0x25, &data);
+    error = MLX90614_SMBusRead(i2c_num, slaveAddr, 0x25, &data);
     
     if (error == 0 && val > 0x0003)
     {
         val = val << 8;
         data = data & 0xF8FF;
         data = data + val;
-        error = MLX90614_SMBusWrite(slaveAddr, 0x25, 0);
+        error = MLX90614_SMBusWrite(i2c_num, slaveAddr, 0x25, 0);
         if(error == 0)
         {
-            error = MLX90614_SMBusWrite(slaveAddr, 0x25, data);
+            error = MLX90614_SMBusWrite(i2c_num, slaveAddr, 0x25, data);
         }
     }
     
@@ -254,11 +276,11 @@ int MLX90614_SetFIR(uint8_t slaveAddr, uint8_t value)
 
 //------------------------------------------------------------------------------
 
-int MLX90614_GetIIR(uint8_t slaveAddr, uint8_t *iir)
+int MLX90614_GetIIR(i2c_port_t i2c_num, uint8_t slaveAddr, uint8_t *iir)
 {
     int error = 0;
     uint16_t data = 0;
-    error = MLX90614_SMBusRead(slaveAddr, 0x25, &data);
+    error = MLX90614_SMBusRead(i2c_num,slaveAddr, 0x25, &data);
     
     data = data & 0x0007;
     
@@ -269,22 +291,22 @@ int MLX90614_GetIIR(uint8_t slaveAddr, uint8_t *iir)
  
 //------------------------------------------------------------------------------
 
-int MLX90614_SetIIR(uint8_t slaveAddr, uint8_t value)
+int MLX90614_SetIIR(i2c_port_t i2c_num, uint8_t slaveAddr, uint8_t value)
 {
     int error = 0;
     uint16_t data = 0;
     uint8_t val = value & 0x0007;
     
-    error = MLX90614_SMBusRead(slaveAddr, 0x25, &data);
+    error = MLX90614_SMBusRead(i2c_num,slaveAddr, 0x25, &data);
     
     if (error == 0)
     {
         data = data & 0xFFF8;
         data = data + val;
-        error = MLX90614_SMBusWrite(slaveAddr, 0x25, 0);
+        error = MLX90614_SMBusWrite(i2c_num, slaveAddr, 0x25, 0);
         if(error == 0)
         {
-            error = MLX90614_SMBusWrite(slaveAddr, 0x25, data);
+            error = MLX90614_SMBusWrite(i2c_num, slaveAddr, 0x25, data);
         }
     }
     
