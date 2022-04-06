@@ -32,6 +32,7 @@ extern "C" {
     int MLX90614_GetIRdata2(i2c_port_t i2c_num, uint8_t slaveAddr, uint16_t *ir2);
     int MLX90614_GetSlaveAddr(i2c_port_t i2c_num, uint8_t slaveAddr, uint16_t *current_addr);
     int MLX90614_SetSlaveAddr(i2c_port_t i2c_num, uint8_t slaveAddr, uint16_t current_addr);
+    int MLX90614_SetEEPROM_Reg(i2c_port_t i2c_num, uint16_t slaveAddr, uint16_t value);
     int MLX90614_GetEmissivity(i2c_port_t i2c_num, uint8_t slaveAddr, float *emissivity);
     int MLX90614_SetEmissivity(i2c_port_t i2c_num, uint8_t slaveAddr, float value);
     int MLX90614_GetFIR(i2c_port_t i2c_num, uint8_t slaveAddr, uint8_t *fir);

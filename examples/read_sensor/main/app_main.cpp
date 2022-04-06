@@ -49,6 +49,8 @@ extern "C" void app_main(){
                 temp_obj[i-1U] = -1;
             }
             ESP_LOGI(TAG,"Object %d's Temperature: %f\n", i, temp_obj[i-1U]);
+            uint16_t eeData = 0;
+            MLX90614_DumpEE(((i%2U) == 0U) ? I2C_NUM_1 : I2C_NUM_0, uint8_t{i}, &eeData);
 
         }
 

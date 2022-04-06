@@ -29,6 +29,7 @@ int MLX90614_DumpEE(i2c_port_t i2c_num, uint8_t slaveAddr, uint16_t *eeData)
      while (address < 0x40 && error == 0)
      {
         error = MLX90614_SMBusRead(i2c_num,slaveAddr, address, p);
+        printf("Address: 0x%x, Value: 0x%x\n", (address-0x20), *p);
         address = address + 1;
         p = p + 1;
      }   
@@ -159,9 +160,23 @@ int MLX90614_SetSlaveAddr(i2c_port_t i2c_num, uint16_t slaveAddr, uint16_t curre
 {
     int error = 0;
     do{
-        // error = MLX90614_SMBusWrite(i2c_num, slaveAddr, 0x2E, 0x0000);
+        error = MLX90614_SMBusWrite(i2c_num, slaveAddr, 0x2E, 0x0000);
         printf("error\n");
         error = MLX90614_SMBusWrite(i2c_num, slaveAddr, 0x2E, current_addr);
+    }while(error != 0);
+
+    return error;
+}
+
+//------------------------------------------------------------------------------
+
+int MLX90614_SetEEPROM_Reg(i2c_port_t i2c_num, uint16_t slaveAddr, uint16_t value)
+{
+    int error = 0;
+    do{
+        error = MLX90614_SMBusWrite(i2c_num, slaveAddr, 0x25, 0x0000);
+        printf("error\n");
+        error = MLX90614_SMBusWrite(i2c_num, slaveAddr, 0x25, value);
     }while(error != 0);
 
     return error;

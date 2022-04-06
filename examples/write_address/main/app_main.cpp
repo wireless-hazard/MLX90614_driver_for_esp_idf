@@ -21,8 +21,8 @@ static constexpr gpio_num_t SCL1 = GPIO_NUM_33;
 static float temp_obj{0};
 static float temp_amb{0};
 
-static constexpr uint8_t old_address = 0x0; //Current address stored on the sensor
-static constexpr uint8_t new_address = 0x1; //Address to be written on the sensor
+static constexpr uint8_t old_address = 0x5A; //Current address stored on the sensor
+static constexpr uint8_t new_address = 0x01; //Address to be written on the sensor
 static constexpr i2c_port_t current_bus = I2C_NUM_0; //Current i2c bus, could be I2C_NUM_0 or I2C_NUM_1
 
 /** Steps to successfully write a new address on the temperature sensor
@@ -44,15 +44,18 @@ repeat steps 3 and 4.
 extern "C" void app_main(){
 
     i2c0.begin(SDA, SCL, 10000);
-    i2c1.begin(SDA, SCL, 10000);
+    i2c1.begin(SDA1, SCL1, 10000);
 
 
     uint16_t temp_addr;
 
     temp_addr = 0;
 
-    #if 1 //Writes new address to the temperature sensor
+    #if 0 //Writes new address to the temperature sensor
     MLX90614_SetSlaveAddr(current_bus, old_address, new_address);
+    #endif
+    #if 1 //Writes a new configuration into the 
+    MLX90614_SetEEPROM_Reg(current_bus, 0x01, 0x9FB4);
     #endif
     ESP_LOGI("","Success!!\n");
 
